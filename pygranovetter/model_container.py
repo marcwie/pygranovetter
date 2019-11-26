@@ -40,8 +40,11 @@ class ModelContainer():
             self._models["metadata"]["average_degree"].add(average_degree)
             self.save_model()
         else:
+            M = self._models["data"][new_key] 
             if verbose:
                 print(new_key, "already present. Skip.")
+
+        return M
 
     def save_model(self):
         
