@@ -13,7 +13,8 @@ class Macromodel():
 
         if number_of_nodes is None:
             number_of_nodes = average_degree * 10
-        self._y = np.array([self.approximation(x=_x, number_of_nodes=number_of_nodes) for _x in self._x])
+
+        self._y = self.approximation(x=self._x, number_of_nodes=number_of_nodes) 
 
 
     def diagonal_line(self, certainly_active, potentially_active):
@@ -91,7 +92,7 @@ class Macromodel():
 
     def approximation(self, x, number_of_nodes=10000):
         """
-        Actually compute one effective threshold from the macro approximation.
+        Compute the distribution of effective thresholds.
 
         The approximation is based on a multinomial distribution that is again
         approximated by two Poission distributions.
@@ -116,10 +117,8 @@ class Macromodel():
         micro_threshold = self._micro_threshold
         average_degree = self._average_degree
 
-        if (micro_threshold == 1) or (x < 0):
-            return 0
-        if x > 1: 
-            return 1
+        if (micro_threshold == 1):
+            return np.ones_like(x)
         
         lambda_a = average_degree * x
         lambda_b = average_degree * (1 - x)
@@ -127,10 +126,16 @@ class Macromodel():
         ul_b1 = np.arange(number_of_nodes + 1)
         ul_a2 = np.floor(ul_b1 * micro_threshold / (1 - micro_threshold))
             
-        b_term = stats.poisson.pmf(mu=lambda_b, k=ul_b1)
-        a_term = stats.poisson.cdf(mu=lambda_a, k=ul_a2)
+        b_term = np.array([stats.poisson.pmf(mu=l_b, k=ul_b1) for l_b in lambda_b])
+        a_term = np.array([stats.poisson.cdf(mu=l_a, k=ul_a2) for l_a in lambda_a])
+    
+        y = 1 - (b_term * a_term).sum(axis=1)
+        
+        y[x < 0] = 0
+        y[x > 1] = 1
 
-        return 1 - (b_term * a_term).sum()
+        return y
+
 
 
 if __name__ == "__main__":
