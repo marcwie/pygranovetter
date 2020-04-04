@@ -1,29 +1,58 @@
 import networkx as nx
 import numpy as np
+import pickle
 
 SEED = 0
 np.random.seed(SEED)
 
-
 class Micromodel2():
 
     
-    def __init__(self, number_of_nodes, average_degree, micro_threshold):
+    def __init__(self, number_of_nodes, average_degree, micro_threshold,
+                 potentially_active=None):
 
         p = average_degree / (number_of_nodes - 1)
+        if not potentially_active:
+            potentially_active = number_of_nodes
 
         self._N = number_of_nodes
+        self._average_degree = average_degree
         self._p = p
         self._micro_threshold = micro_threshold
-    
+        self._potentially_active = potentially_active
+        
+        self._results = {"number_of_nodes": number_of_nodes,
+                         "average_degree": average_degree,
+                         "micro_threshold": micro_threshold,
+                         "potentially_active": potentially_active,
+                         "data": {}}
 
-    def run(self, certainly_active, potentially_active=None):
+    @classmethod
+    def load(cls, input_file):
 
-        if not potentially_active:
-            potentially_active = self._N
+        data = pickle.load(open(input_file, "rb"))
+        number_of_nodes = data["number_of_nodes"]
+        average_degree = data["average_degree"]
+        micro_threshold = data["micro_threshold"]
+        potentially_active = data["potentially_active"]
+
+        model = Micromodel2(number_of_nodes=number_of_nodes,
+                             average_degree=average_degree,
+                             micro_threshold=micro_threshold,
+                             potentially_active=potentially_active)
+        model._results = data
+
+        return model
+
+
+    def _one_run(self, certainly_active):
+        
+        if certainly_active not in self._results["data"].keys():
+            self._results["data"][certainly_active] = []
 
         if not certainly_active:
-            return [0]
+            self._results["data"][certainly_active].append([0])
+            return 
         
         # Use fast_gnp_random_graph since it performs better than
         # erdos_renyi_graph
@@ -31,7 +60,7 @@ class Micromodel2():
         degree = network.degree()
 
         potentially_active_nodes = np.random.choice(self._N, 
-                                                    potentially_active,
+                                                    self._potentially_active,
                                                     replace=False)
 
         initially_active_nodes = np.random.choice(potentially_active_nodes,
@@ -55,17 +84,58 @@ class Micromodel2():
                 if len(active_neighbors) > (self._micro_threshold * degree[node]):
                     newly_active_nodes.add(node)
 
-        return currently_active
+        self._results["data"][certainly_active].append(currently_active)
+
+  
+    def run(self, certainly_active, n_runs=1):
+        
+        assert type(certainly_active) is not float
+
+        if type(certainly_active) is int: 
+            certainly_active = [ certainly_active ]
+
+        total_runs = len(certainly_active) * n_runs
+        current_run = 1
+
+        for _c in certainly_active:
+            for _ in range(n_runs):
+                progress = current_run / total_runs * 100
+                print("Running: {:5.2f} % done".format(progress), end="\r")
+                self._one_run(_c)
+                current_run += 1
 
 
+    def print_results(self, certainly_active):
+        for result in self._results["data"][certainly_active]:
+            print(result)
+
+
+    def aggregate(self):
+
+        data = self._results["data"]
+        certainly_active = list(data.keys())
+        certainly_active.sort()
+        mean = [np.mean([d[-1] for d in data[c]]) for c in certainly_active]
+        std = [np.std([d[-1] for d in data[c]]) for c in certainly_active]
+    
+        return np.stack((certainly_active, mean, std), axis=1)
+
+
+    def save(self, output_file=None):
+           
+        if output_file is None:
+            output_file = "granovetter_micro_N{0}_K{1}_P{2}_T{3}.p".format(
+                self._N, self._average_degree, self._potentially_active,
+                self._micro_threshold)
+
+        pickle.dump(self._results, open(output_file, "wb"))
+
+    
 if __name__ == "__main__":
-    m = Micromodel2(number_of_nodes=1000, average_degree=20,
-                    micro_threshold=0.25)
-
     print("Potentially active<N")
-    for _ in range(5):
-        print(m.run(100, potentially_active=900))
+    m = Micromodel2(number_of_nodes=1000, average_degree=20,
+                    micro_threshold=0.25, potentially_active=900)
+    m.run(np.arange(0, 1000, 100), 5)
+    m.print_results(100)
 
-    print("Potentially active=N")
-    for _ in range(5):
-        print(m.run(100))
+    print(m.aggregate())
