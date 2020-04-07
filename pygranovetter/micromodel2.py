@@ -1,9 +1,11 @@
 import networkx as nx
 import numpy as np
 import pickle
+import random
 
 SEED = 0
 np.random.seed(SEED)
+random.seed(SEED)
 
 class Micromodel2():
 
@@ -56,7 +58,7 @@ class Micromodel2():
         
         # Use fast_gnp_random_graph since it performs better than
         # erdos_renyi_graph
-        network = nx.fast_gnp_random_graph(n=self._N, p=self._p, seed=SEED)
+        network = nx.fast_gnp_random_graph(n=self._N, p=self._p)#, seed=SEED)
         degree = network.degree()
 
         potentially_active_nodes = np.random.choice(self._N, 
@@ -73,6 +75,7 @@ class Micromodel2():
         currently_active = []
 
         while newly_active_nodes:
+        
             active_nodes.update(newly_active_nodes)
             inactive_nodes.difference_update(newly_active_nodes)
             currently_active.append(len(active_nodes))
