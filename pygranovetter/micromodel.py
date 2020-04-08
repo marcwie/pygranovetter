@@ -126,7 +126,10 @@ class Micromodel():
 
 
     def save(self, output_folder="./", output_file=None):
-       
+      
+        if "/" in output_file:
+            output_folder, output_file = output_file.rsplit("/", 1)
+
         if output_folder[-1] != "/":
             output_folder += "/"
 
