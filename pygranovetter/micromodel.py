@@ -39,7 +39,7 @@ class Micromodel():
         micro_threshold = data["micro_threshold"]
         potentially_active = data["potentially_active"]
 
-        model = Micromodel2(number_of_nodes=number_of_nodes,
+        model = Micromodel(number_of_nodes=number_of_nodes,
                              average_degree=average_degree,
                              micro_threshold=micro_threshold,
                              potentially_active=potentially_active)
