@@ -1,3 +1,4 @@
+import os
 import networkx as nx
 import numpy as np
 import pickle
@@ -7,7 +8,7 @@ SEED = 0
 np.random.seed(SEED)
 random.seed(SEED)
 
-class Micromodel2():
+class Micromodel():
 
     
     def __init__(self, number_of_nodes, average_degree, micro_threshold,
@@ -124,14 +125,20 @@ class Micromodel2():
         return np.stack((certainly_active, mean, std), axis=1)
 
 
-    def save(self, output_file=None):
-           
+    def save(self, output_folder="./", output_file=None):
+       
+        if output_folder[-1] != "/":
+            output_folder += "/"
+
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
         if output_file is None:
             output_file = "granovetter_micro_N{0}_K{1}_P{2}_T{3}.p".format(
                 self._N, self._average_degree, self._potentially_active,
                 self._micro_threshold)
 
-        pickle.dump(self._results, open(output_file, "wb"))
+        pickle.dump(self._results, open(output_folder+output_file, "wb"))
 
     
 if __name__ == "__main__":
