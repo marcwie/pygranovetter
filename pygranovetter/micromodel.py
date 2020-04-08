@@ -125,6 +125,48 @@ class Micromodel():
         return np.stack((certainly_active, mean, std), axis=1)
 
 
+    def emergent_threshold_distribution(self, which="equilibrium", max_len=None):
+        
+        data = self._results["data"]
+        pot = self._potentially_active
+
+        all_x = []
+        all_y = []
+
+        if which == "equilibrium":
+            for cert, entries in data.items():
+                for entry in entries:
+                    if len(entry) > 1:
+                        all_x.append(entry[0])
+                        all_y.append((entry[1] - cert) / (pot - cert))
+                    if len(entry) > 2:
+                        all_x.append(entry[-2])
+                        all_y.append((entry[-1] - cert) / (pot - cert))
+    
+            all_x = np.array(all_x) / self._N
+            all_y = np.array(all_y)
+
+        if which == "off_equilibrium":
+            for cert, entries in data.items():
+                for entry in entries:
+                    if len(entry) > 3:
+                        entry = np.array(entry)
+                        all_x.append(entry[1:-2])
+                        all_y.append((entry[2:-1] - cert) / (pot - cert))
+            
+            if len(all_x):
+                all_x = np.concatenate(all_x) / self._N
+                all_y = np.concatenate(all_y)
+
+        if max_len and len(all_x):
+            choice = np.random.choice(len(all_x), min(max_len, len(all_x)), replace=False)
+            all_x = all_x[choice]
+            all_y = all_y[choice]
+
+        return all_x, all_y
+
+
+
     def save(self, output_folder="./", output_file=None):
       
         if "/" in output_file:
