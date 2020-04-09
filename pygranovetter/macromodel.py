@@ -137,6 +137,48 @@ class Macromodel():
         return y
 
 
+    def bifurcation_diagram(self, certainly_active, potentially_active):
+   
+        vary_certainly = (type(certainly_active) == np.ndarray) and (type(potentially_active) == float)
+        vary_potential = (type(potentially_active) == np.ndarray) and (type(certainly_active) == float)
+    
+        if not vary_certainly and not vary_potential:
+            print("Either certainly or potentially active must be numpy 1d array")
+            return 
+
+        if vary_certainly:
+            x = certainly_active
+            y = potentially_active
+        else:
+            x = potentially_active
+            y = certainly_active
+    
+        lower_branch = []
+        middle_branch = []
+        upper_branch = []
+    
+        for _x in x:
+            if vary_certainly:
+                fixed_points = self.fixed_points(certainly_active=_x, potentially_active=y)
+            else:
+                fixed_points = self.fixed_points(certainly_active=y, potentially_active=_x)
+    
+            fp_x = fixed_points[:, 0]
+            if len(fp_x) == 1 and not len(middle_branch):
+                lower_branch.append((_x, fp_x[0]))
+            elif len(fp_x) == 3:
+                lower_branch.append((_x, fp_x[0]))
+                middle_branch.append((_x, fp_x[1]))
+                upper_branch.append((_x, fp_x[2]))
+            else:
+                upper_branch.append((_x, fp_x[0]))
+    
+        lower_branch = np.array(lower_branch)
+        middle_branch = np.array(middle_branch)
+        upper_branch = np.array(upper_branch)
+    
+        return lower_branch, middle_branch, upper_branch
+
 
 if __name__ == "__main__":
     M = Macromodel(micro_threshold=0.5, average_degree=10)
