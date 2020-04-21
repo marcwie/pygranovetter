@@ -139,11 +139,17 @@ class Macromodel():
 
     def bifurcation_diagram(self, certainly_active, potentially_active):
    
-        vary_certainly = (type(certainly_active) == np.ndarray) and (type(potentially_active) == float)
-        vary_potential = (type(potentially_active) == np.ndarray) and (type(certainly_active) == float)
+        #vary_certainly = (type(certainly_active) == np.ndarray) and (type(potentially_active) == float)
+        #vary_potential = (type(potentially_active) == np.ndarray) and (type(certainly_active) == float)
     
+        vary_certainly = type(certainly_active) == np.ndarray
+        vary_potential = type(potentially_active) == np.ndarray
+    
+
         if not vary_certainly and not vary_potential:
             print("Either certainly or potentially active must be numpy 1d array")
+            print(type(certainly_active))
+            print(type(potentially_active))
             return 
 
         if vary_certainly:
