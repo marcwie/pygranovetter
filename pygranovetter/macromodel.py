@@ -58,8 +58,8 @@ class Macromodel():
         # Catch some trivial cases to account for numerical errors
         if certainly_active == 0:
             roots[0] = 0
-        if potentially_active == 1:
-            roots[-1] = 0
+        #if potentially_active == 1:
+        #    roots[-1] = 0
 
         # If y == diag a root is found
         mask = (roots == 0)
