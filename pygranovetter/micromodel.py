@@ -188,7 +188,7 @@ class Micromodel():
     
 if __name__ == "__main__":
     print("Potentially active<N")
-    m = Micromodel2(number_of_nodes=1000, average_degree=20,
+    m = Micromodel(number_of_nodes=1000, average_degree=20,
                     micro_threshold=0.25, potentially_active=900)
     m.run(np.arange(0, 1000, 100), 5)
     m.print_results(100)
