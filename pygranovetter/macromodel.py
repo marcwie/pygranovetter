@@ -18,12 +18,16 @@ class Macromodel():
 
 
     def diagonal_line(self, certainly_active, potentially_active):
-#        if certainly_active == potentially_active:
-#            certainly_active = .9999999 * certainly_active
+        if certainly_active == potentially_active:
+            certainly_active = .99999999999 * certainly_active
 
         x = self._x
         numerator = x - certainly_active
         denumerator = potentially_active - certainly_active
+        
+        if denumerator == 0:
+            denumerator = 1E-16
+
         return numerator / denumerator
 
 
@@ -51,13 +55,18 @@ class Macromodel():
         """
         x = self._x
         y = self._y
+
+        if certainly_active > potentially_active:
+            certainly_active = potentially_active
+
         diag = self.diagonal_line(certainly_active=certainly_active,
                                   potentially_active=potentially_active)
         roots = y - diag
 
         # Catch some trivial cases to account for numerical errors
-        if certainly_active == 0:
-            roots[0] = 0
+        #if certainly_active == 0:
+        #    roots[0] = 0
+
         #if potentially_active == 1:
         #    roots[-1] = 0
 
@@ -68,6 +77,13 @@ class Macromodel():
         mask[:-1][(roots[1:] * roots[:-1]) < 0] = 1
 
         fixed_points = np.append(x[mask], y[mask]).reshape(2, -1).T
+       
+        # Catch case when only two fixed points exist. In that case (0, 0) is
+        # an unstable fixed points that only exists if certainly_active = 0 and
+        # vanishes as soon  as certainly_active > 0. We can safely ignore this
+        # point
+        if (len(fixed_points) == 2) and (fixed_points[0] == 0).all():
+            fixed_points = np.array([fixed_points[1]])
 
         return fixed_points
 
@@ -131,7 +147,7 @@ class Macromodel():
     
         y = 1 - (b_term * a_term).sum(axis=1)
         
-        y[x < 0] = 0
+        y[x <= 0] = 0
         y[x > 1] = 1
 
         return y
@@ -168,7 +184,7 @@ class Macromodel():
                 fixed_points = self.fixed_points(certainly_active=_x, potentially_active=y)
             else:
                 fixed_points = self.fixed_points(certainly_active=y, potentially_active=_x)
-    
+
             fp_x = fixed_points[:, 0]
             if len(fp_x) == 1 and not len(middle_branch):
                 lower_branch.append((_x, fp_x[0]))
