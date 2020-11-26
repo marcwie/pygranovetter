@@ -153,11 +153,9 @@ class Macromodel():
         return y
 
 
-    def bifurcation_diagram(self, certainly_active, potentially_active):
+    def bifurcation_diagram(self, certainly_active, potentially_active,
+                            fill=False):
    
-        #vary_certainly = (type(certainly_active) == np.ndarray) and (type(potentially_active) == float)
-        #vary_potential = (type(potentially_active) == np.ndarray) and (type(certainly_active) == float)
-    
         vary_certainly = type(certainly_active) == np.ndarray
         vary_potential = type(potentially_active) == np.ndarray
     
@@ -199,6 +197,20 @@ class Macromodel():
         middle_branch = np.array(middle_branch)
         upper_branch = np.array(upper_branch)
     
+        if fill:
+            branches = (lower_branch, middle_branch, upper_branch)
+            full_branches = np.zeros((len(x), 4)) * np.nan
+            full_branches[:, 0] = x
+
+            for i, branch in enumerate(branches):
+                if not len(branch):
+                    continue
+                mask = [c in branch[:, 0] for c in full_branches[:, 0]] 
+                full_branches[mask, i+1] = branch[:, 1]
+            
+            return full_branches
+
+
         return lower_branch, middle_branch, upper_branch
 
 
