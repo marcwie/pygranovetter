@@ -6,10 +6,18 @@ class Macromodel():
 
     def __init__(self, micro_threshold, average_degree, accuracy=200,
                  number_of_nodes=None):
+        
+        if micro_threshold > 1:
+            print("Setting micro-threshold to 1")
+            micro_threshold = 1
+        if micro_threshold < 0:
+            print("Setting micro-threshold to 0")
+            micro_threshold = 0
 
         self._micro_threshold = micro_threshold
         self._average_degree = average_degree
         self._x = np.linspace(0, 1, accuracy)
+        self._accuracy = accuracy
 
         if number_of_nodes is None:
             number_of_nodes = average_degree * 10
@@ -59,16 +67,9 @@ class Macromodel():
         if certainly_active > potentially_active:
             certainly_active = potentially_active
 
-        diag = self.diagonal_line(certainly_active=certainly_active,
+        diag = self.diagonal_line(certainly_active=certainly_active, 
                                   potentially_active=potentially_active)
         roots = y - diag
-
-        # Catch some trivial cases to account for numerical errors
-        #if certainly_active == 0:
-        #    roots[0] = 0
-
-        #if potentially_active == 1:
-        #    roots[-1] = 0
 
         # If y == diag a root is found
         mask = (roots == 0)
@@ -78,13 +79,6 @@ class Macromodel():
 
         fixed_points = np.append(x[mask], y[mask]).reshape(2, -1).T
        
-        # Catch case when only two fixed points exist. In that case (0, 0) is
-        # an unstable fixed points that only exists if certainly_active = 0 and
-        # vanishes as soon  as certainly_active > 0. We can safely ignore this
-        # point
-        if (len(fixed_points) == 2) and (fixed_points[0] == 0).all():
-            fixed_points = np.array([fixed_points[1]])
-
         return fixed_points
 
 
@@ -134,7 +128,7 @@ class Macromodel():
         average_degree = self._average_degree
 
         if (micro_threshold == 1):
-            return np.ones_like(x)
+            return np.zeros_like(x)
         
         lambda_a = average_degree * x
         lambda_b = average_degree * (1 - x)
@@ -153,65 +147,42 @@ class Macromodel():
         return y
 
 
-    def bifurcation_diagram(self, certainly_active, potentially_active,
-                            fill=False):
-   
-        vary_certainly = type(certainly_active) == np.ndarray
-        vary_potential = type(potentially_active) == np.ndarray
-    
+    def bifurcation_diagram_certainly_active(self, potential):
+  
+        branches = np.zeros((self._accuracy, 3)) * np.nan
+        certainly_actives = self._x.copy()
+        certainly_actives[certainly_actives >= potential] = potential
+        
+        for i, cert in enumerate(certainly_actives):
+            fp = self.fixed_points(certainly_active=cert, potentially_active=potential)
+            fp_x = fp[:, 0]
+          
+            if len(fp_x) == 2:
+                # If two fixed points exist only the upper branch is stable. This can only happen
+                # if cert == 0
+                branches[i, 2] = fp_x[1]
 
-        if not vary_certainly and not vary_potential:
-            print("Either certainly or potentially active must be numpy 1d array")
-            print(type(certainly_active))
-            print(type(potentially_active))
-            return 
+            elif len(fp_x) == 1 and np.isnan(branches[:, 1:]).all():
+                # If one fixed points exist and neither upper nor middle branch have already
+                # values, than the fixed point lies on the lower branch
+                branches[i, 0] = fp_x
 
-        if vary_certainly:
-            x = certainly_active
-            y = potentially_active
-        else:
-            x = potentially_active
-            y = certainly_active
-    
-        lower_branch = []
-        middle_branch = []
-        upper_branch = []
-    
-        for _x in x:
-            if vary_certainly:
-                fixed_points = self.fixed_points(certainly_active=_x, potentially_active=y)
-            else:
-                fixed_points = self.fixed_points(certainly_active=y, potentially_active=_x)
-
-            fp_x = fixed_points[:, 0]
-            if len(fp_x) == 1 and not len(middle_branch):
-                lower_branch.append((_x, fp_x[0]))
             elif len(fp_x) == 3:
-                lower_branch.append((_x, fp_x[0]))
-                middle_branch.append((_x, fp_x[1]))
-                upper_branch.append((_x, fp_x[2]))
+                # If three fixed points exist the lie on lower, middle, upper branch respectively
+                branches[i] = fp_x
+
+            elif len(fp_x) == 1 and np.isfinite(branches).any():
+                # If one fixed point exists and any branch exist, than the fixed point
+                # is on the uppper branch. This must be put after the condition 
+                # len(fp_x) == 1 and np.isnan(branches[:, 1:]).all()!
+                branches[i, 2] = fp_x[0]
+
             else:
-                upper_branch.append((_x, fp_x[0]))
-    
-        lower_branch = np.array(lower_branch)
-        middle_branch = np.array(middle_branch)
-        upper_branch = np.array(upper_branch)
-    
-        if fill:
-            branches = (lower_branch, middle_branch, upper_branch)
-            full_branches = np.zeros((len(x), 4)) * np.nan
-            full_branches[:, 0] = x
-
-            for i, branch in enumerate(branches):
-                if not len(branch):
-                    continue
-                mask = [c in branch[:, 0] for c in full_branches[:, 0]] 
-                full_branches[mask, i+1] = branch[:, 1]
-            
-            return full_branches
-
-
-        return lower_branch, middle_branch, upper_branch
+                print(fp_x)
+                print(branches)
+                assert False, "Didn't manage to establish correct branch for fixed point!"
+                
+        return branches
 
 
 if __name__ == "__main__":
