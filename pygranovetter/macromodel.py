@@ -147,13 +147,15 @@ class Macromodel():
         return y
 
 
-    def bifurcation_diagram_certainly_active(self, potential):
-  
+    def bifurcation_diagram(self, potential):
+        """
+        Branches of the bifurcation diagram for fixed certainly active and given potential.
+        """
+        # This only works if one draws the bifurcation diagram starting at certainly_actives = 0
+
         branches = np.zeros((self._accuracy, 3)) * np.nan
-        certainly_actives = self._x.copy()
-        certainly_actives[certainly_actives >= potential] = potential
         
-        for i, cert in enumerate(certainly_actives):
+        for i, cert in enumerate(self._x):
             fp = self.fixed_points(certainly_active=cert, potentially_active=potential)
             fp_x = fp[:, 0]
           
@@ -178,8 +180,7 @@ class Macromodel():
                 branches[i, 2] = fp_x[0]
 
             else:
-                print(fp_x)
-                print(branches)
+                # By now, this should never be reached
                 assert False, "Didn't manage to establish correct branch for fixed point!"
                 
         return branches
