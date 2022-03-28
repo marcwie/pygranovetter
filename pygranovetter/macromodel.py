@@ -214,6 +214,56 @@ class Macromodel():
         return lower_branch, middle_branch, upper_branch
 
 
+    def bifurcation_diagram_alternative(self, potential, certainly=None):
+            """
+            Branches of the bifurcation diagram for fixed certainly active and given potential.
+
+            This is an alternative way to compute the bifurcation diagram which
+            is needed to compute Figure 3 of the Granovetter 2 Paper. 
+
+            It allows to specify a given (irregularly sampled) set of certainly
+            active nodes.
+            """
+            # This only works if one draws the bifurcation diagram starting at certainly_actives = 0
+    
+            if certainly is None:
+                certainly = self.x()
+            elif certainly[0] != 0:
+                assert False, "Certainly actives must start at zero!"
+    
+            branches = np.zeros((len(certainly), 3)) * np.nan
+    
+            for i, cert in enumerate(certainly):
+                fp = self.fixed_points(certainly_active=cert, potentially_active=potential)
+                fp_x = fp[:, 0]
+              
+                if len(fp_x) == 2:
+                    # If two fixed points exist only the upper branch is stable. This can only happen
+                    # if cert == 0
+                    branches[i, 2] = fp_x[1]
+    
+                elif len(fp_x) == 1 and np.isnan(branches[:, 1:]).all():
+                    # If one fixed points exist and neither upper nor middle branch have already
+                    # values, than the fixed point lies on the lower branch
+                    branches[i, 0] = fp_x
+    
+                elif len(fp_x) == 3:
+                    # If three fixed points exist the lie on lower, middle, upper branch respectively
+                    branches[i] = fp_x
+    
+                elif len(fp_x) == 1 and np.isfinite(branches).any():
+                    # If one fixed point exists and any branch exist, than the fixed point
+                    # is on the uppper branch. This must be put after the condition 
+                    # len(fp_x) == 1 and np.isnan(branches[:, 1:]).all()!
+                    branches[i, 2] = fp_x[0]
+    
+                else:
+                    # By now, this should never be reached
+                    assert False, "Didn't manage to establish correct branch for fixed point!"
+                    
+            return branches
+
+
 if __name__ == "__main__":
     M = Macromodel(micro_threshold=0.5, average_degree=10)
     print(M.x(), M.effective_thresholds())
