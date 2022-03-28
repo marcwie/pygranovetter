@@ -4,6 +4,7 @@ import numpy as np
 def criticality(branches, certainly, potential):
     """
     Compute criticality.
+
     Parameters:
     -----------
     branches : 2d numpy array
@@ -14,6 +15,7 @@ def criticality(branches, certainly, potential):
         have the same length as 'branches'
     potential : float
         The share of potentially active nodes
+
     Returns: 
     --------
     1d np.ndarray
