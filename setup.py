@@ -1,6 +1,7 @@
-from setuptools import setup
+import setuptools 
 
-setup(name='pygranovetter',
+setuptools.setup(name='pygranovetter',
       version='0.1',
-      py_modules=['pygranovetter/'],
-      )
+      #py_modules=['pygranovetter/'],
+      packages=setuptools.find_packages(include=("pygranovetter",)),
+)
